@@ -97,7 +97,7 @@ class _AddScreenState extends State<AddScreen> {
                   );
                 } else {
                   // Jika form tidak kosong
-                  BookService().addBook(
+                  BookService().enqueueBook(
                     judulBuku: judulBukuController.text,
                     penulisBuku: penulisBukuController.text,
                     tahunBuku: int.parse(tahunBukuController.text),

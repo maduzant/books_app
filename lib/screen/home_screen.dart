@@ -14,13 +14,45 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Salinan  dari booklist
+  List<BookModel> books = List.of(bookList);
+  TextEditingController searchController = TextEditingController();
+  bool isSorting = false;
+
+  @override
+  void dispose() {
+    super.dispose();
+    searchController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // List buku dari booklist
-    List<BookModel> books = List.of(bookList);
-
     return Scaffold(
       appBar: AppBar(
+        // Button dequeue
+        leading: Visibility(
+          visible: books.isNotEmpty,
+          child: IconButton(
+            onPressed: () {
+              BookService().dequeueBook();
+              books = List.of(bookList);
+              setState(() {});
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Colors.green,
+                  content: Text(
+                    "Berhasil dihapus!",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.delete,
+              color: Colors.white,
+            ),
+          ),
+        ),
         title: const Text(
           "Books App",
           style: TextStyle(color: Colors.white),
@@ -45,48 +77,94 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         backgroundColor: Colors.deepPurple,
       ),
-      body: books.isEmpty
+      body: bookList.isEmpty
           ?
-          // Jika books kosong
+          // Jika bookList kosong
           const Center(
               child: Text("Data Kosong"),
             )
           :
-          // Jika books tidak kosong
-          Container(
-              color: Colors.yellow,
-              child: ListView.builder(
-                itemCount: books.length,
-                itemBuilder: (context, index) {
-                  log("Index ke : $index");
-                  log("Nama buku : ${books[index].title}");
-                  return Container(
-                    color: Colors.blue,
-                    child: ListTile(
-                      title: Text("${books[index].id}: ${books[index].title}"),
-                      subtitle:
-                          Text("${books[index].author}, ${books[index].year}"),
-                      // Hapus data dari books
-                      trailing: IconButton(
-                        onPressed: () {
-                          BookService().removeBook(book: books[index]);
-                          setState(() {});
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              backgroundColor: Colors.green,
-                              content: Text(
-                                "Data berhasil dihapus!",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.remove_circle),
+          // Jika bookList tidak kosong
+          Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Row(
+                    children: [
+                      // Form search
+                      Expanded(
+                        child: TextField(
+                          controller: searchController,
+                          decoration:
+                              const InputDecoration(hintText: "Search Title"),
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                      // Button Linier Search
+                      IconButton(
+                          onPressed: () {
+                            if (searchController.text.isNotEmpty) {
+                              int index = BookService()
+                                  .linierSearch(search: searchController.text);
+                              if (index != -1) {
+                                books = [bookList[index]];
+                              } else {
+                                books = [];
+                              }
+                            } else {
+                              
+                              books = List.of(bookList);
+                            }
+                            setState(() {});
+                          },
+                          icon: const Icon(
+                            Icons.search,
+                            color: Colors.white,
+                          ))
+                    ],
+                  ),
+                ),
+                // Button Insertion Sort
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      if (!isSorting) {
+                        log("Masuk if");
+                        books = BookService().insertionSort();
+                      } else {
+                        log("Masuk else");
+                        books = List.of(bookList);
+                      }
+                      isSorting = !isSorting;
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.sort_rounded),
+                    label: isSorting
+                        ? const Text('Cancel')
+                        : const Text(
+                            'Sort by Year',
+                          ),
+                  ),
+                ),
+                Expanded(
+                  child: books.isNotEmpty
+                      ? ListView.builder(
+                          itemCount: books.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: Text(
+                                  "${books[index].id}: ${books[index].title}"),
+                              subtitle: Text(
+                                  "${books[index].author}, ${books[index].year}"),
+                            );
+                          },
+                        )
+                      : const Center(
+                          child: Text('Data Tidak Ditemukan'),
+                        ),
+                ),
+              ],
             ),
     );
   }
